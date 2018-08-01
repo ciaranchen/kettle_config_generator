@@ -1,0 +1,9 @@
+kettle_config/
+*.xlsx
+*.sql
+*.zip
+
+AFS_FUND_AGMT/
+CIM_EXCH_TRADEBIZ_TYPE_C_template/
+*.csv
+.DS_Store
