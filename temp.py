@@ -18,7 +18,7 @@ t1 = r"""
 
 t2 = r"""
 <field>
-<name> {name}</name>
+<name>{name}</name>
 <type>String</type>
 <format/>
 <currency/>
@@ -91,3 +91,17 @@ t6 = r"""
 """
 
 templateFields = [t1, t2, t3, t4, t5, t6]
+
+t6_last = r"""
+<field>
+<in_stream_name>{name}</in_stream_name>
+<out_stream_name/>
+<use_regex>no</use_regex>
+<replace_string>&#x7c;-&#x7c;</replace_string>
+<replace_by_string/>
+<set_empty_string>Y</set_empty_string>
+<replace_field_by_string/>
+<whole_word>no</whole_word>
+<case_sensitive>no</case_sensitive>
+</field>
+"""

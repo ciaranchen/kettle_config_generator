@@ -5,27 +5,12 @@ import os
 import copy
 
 import bs4
-from temp import templateFields
-
-t6_last = r"""
-<field>
-<in_stream_name>{name}</in_stream_name>
-<out_stream_name/>
-<use_regex>no</use_regex>
-<replace_string>&#x7c;-&#x7c;</replace_string>
-<replace_by_string/>
-<set_empty_string>Y</set_empty_string>
-<replace_field_by_string/>
-<whole_word>no</whole_word>
-<case_sensitive>no</case_sensitive>
-</field>
-"""
-
+from temp import templateFields, t6_last
 
 template_name = "AFS_FUND_AGMT"
 base_dir = "kettle_config/"
 base_table = "table.csv"
-base_sql = "table.3.sql"
+base_sql = "table.5.sql"
 template_dir = "templates/"
 
 def toUnicode(ch):
@@ -52,22 +37,26 @@ def get_template():
 def read_sql_table():
     global sql_table
     with open(base_sql) as fp:
+        # 取每行行首字段
         firsts = [line.strip().split(' ')[0] for line in fp.readlines()]
         t = {}
         now_key = ''
         s = ''
         for f in firsts:
+            # 略过关键字
             if f == 'create' or f == 'location' or f == 'stored':
                 continue
+            # 取段名
             if f[:5] == 'tmp2.':
                 print(f[5:-1])
                 t[now_key] = s
                 now_key = f[5:-1]
                 s = ''
-                continue
+            # 取字段
             else:
                 s += ', ' + f
     sql_table = t
+    del sql_table['']
             
         
 
@@ -84,8 +73,7 @@ def mk_row_struct(row):
     toMain(job_code)
     toA(job_code)
     toB(job_code)
-    # _toC(job_code)
-    toC(job_code, row[0])
+    toC(job_code)
     toD(job_code)
 
 
@@ -102,18 +90,12 @@ def toB(code):
     with open(code + "/" + code + "回写入库状态.ktr", 'w') as fw:
         fw.write(templateB.replace(template_name, code))
 
-def _toC(code):
-    with open(code + "/" + code + "处理数据文件.ktr", 'w') as fw:
-        fw.write(templateC.replace(template_name, code))
-
-def toC(code, query_name):
-    # todo: unfinished
-    structs = find_struct(query_name)
+def toC(code):
+    # 生成新的 “处理数据文件”
+    structs = find_struct(code)
     # structs = ["EXCH_TRADEBIZ_TYPE_CD", "EXCH_TRADEBIZ_TYPE_DESC"]
     print(structs)
     add_fields(code, structs)
-    # replace_again()
-    pass
 
 def toD(code):
     with open(code + "/" + code + "获取文件名和job_id做变量.ktr", 'w') as fw:
@@ -137,7 +119,7 @@ def add_fields(code, structs):
                 fields[i].append(bs4.BeautifulSoup(c, "xml").field)
             fields[i].append(bs4.BeautifulSoup(t6_last.format(name=structs[-1]), "xml").field)
     # print(code + "/" + code + "处理数据文件.ktr")
-    with open(code + "/_" + code + "处理数据文件.ktr", 'wb') as fw:
+    with open(code + "/" + code + "处理数据文件.ktr", 'wb') as fw:
         temp = str(templateC).replace(template_name, code)
         fw.write(temp.encode('utf-8'))
 
@@ -147,15 +129,16 @@ def main():
     rows = get_table_name(base_table)
     # ch
     os.chdir(base_dir)
-    with open("temp.txt", 'w') as fw:
+    with open("tablenames.txt", 'w') as fw:
         for r in rows:
             mk_row_struct(r)
             print(r[0])
             fw.write(r[0] + '\n')
 
 if __name__ == '__main__':
-    # main()
-    read_sql_table()
-    with open("sql_tables.txt", 'w') as fw:
-        fw.write(str(sql_table))
+    main()
+    # read_sql_table()
+    with open("sql_tables.csv", 'w') as fw:
+        for k in sql_table:
+            fw.write(k +  "," + sql_table[k].replace(", ", "|").strip().strip("|") +"\n")
     

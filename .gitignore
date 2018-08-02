@@ -3,6 +3,7 @@ kettle_config/
 *.sql
 *.zip
 
+__pycache__
 AFS_FUND_AGMT/
 CIM_EXCH_TRADEBIZ_TYPE_C_template/
 *.csv

@@ -7,9 +7,9 @@ fs.readFile(process.argv[2], (err, data) => {
     data.toString().split('\n').map((e, i) => {
       // console.log(i);
       console.log(e);
-      let readfilename = "kettle_config/" + e + "/_" + e + "处理数据文件.ktr";
+      let readfilename = "kettle_config/" + e + "/" + e + "处理数据文件.ktr";
       console.log(readfilename);
-      let writefilename = "kettle_config/" + e + "/" + e + "处理数据文件.ktr";
+      let writefilename = "kettle_config/" + e + "/_" + e + "处理数据文件.ktr";
       fs.readFile(readfilename, function(err, data) {
         if(err) console.log('文件读取发生错误');
         else {
