@@ -7,10 +7,10 @@ import copy
 import bs4
 from temp import templateFields, t6_last
 
-template_name = "AFS_FUND_AGMT"
+template_name = "AFS_FUND_PRODUCT"
 base_dir = "kettle_config/"
 base_table = "table.csv"
-base_sql = "table.5.sql"
+base_sql = "table.sql"
 template_dir = "templates/"
 
 def toUnicode(ch):
@@ -30,7 +30,7 @@ def get_template():
     # with open(template_name + "/" + template_name + "处理数据文件.ktr") as f:
     #     templateC = f.read()
     templateC = bs4.BeautifulSoup(open(template_name + "/" + template_name + "处理数据文件.ktr"), "xml")
-    with open(template_name + '/' + template_name + '获取文件名和job_id做变量.ktr') as f:
+    with open(template_name + '/' + template_name + '获取文件名和job_code做变量.ktr') as f:
         templateD = f.read()
     read_sql_table()
 
@@ -98,7 +98,7 @@ def toC(code):
     add_fields(code, structs)
 
 def toD(code):
-    with open(code + "/" + code + "获取文件名和job_id做变量.ktr", 'w') as fw:
+    with open(code + "/" + code + "获取文件名和job_code做变量.ktr", 'w') as fw:
         fw.write(templateD.replace(template_name, code))
 
 def find_struct(query):

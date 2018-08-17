@@ -4,7 +4,8 @@ kettle_config/
 *.zip
 
 __pycache__
-AFS_FUND_AGMT/
+AFS*
 CIM_EXCH_TRADEBIZ_TYPE_C_template/
 *.csv
 .DS_Store
+venv
