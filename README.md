@@ -1,3 +1,7 @@
+# kettle config generator
+
+本项目用于批量生成针对不同数据表进行ETL的kettle项目。
+
 ## 文件说明
 
 - parse.py
@@ -27,6 +31,7 @@ python parse.py
 ```
 
 将配置文件中的`处理数据库文件.ktr`的所有中文转换成HTML Entity的形式，需要首先执行上一步：
+
 (虽然这没什么用就是了)
 
 ```shell
@@ -43,28 +48,12 @@ node encode.js tablenames.txt
 
 ```sql
 create EXTERNAL table IF NOT EXISTS
-tmp2.MB_TRANFLOW(
+tmp2.TABLENAME(
 TRF_FLOWNO        String,
-TRF_CSTNO         String,
-TRF_BSNCODE       String,
-TRF_PAYACC        String,
-TRF_SUBTIME       String,
-TRF_TRANAMT       String,
-TRF_HOSTFLWNO     String,
-TRF_HOSTSENDTIME  String,
-TRF_HOSTERROR     String,
-TRF_HOSTMESSAGE   String,
-TRF_IN_BATCH      String,
-TRF_BANKREM       String,
-TRF_STT           String,
-TRF_CLIENTVERSION String,
-TRF_QRCODE_FLAG   String,
-TRF_FAV_FLAG      String,
+...
 TEST              String)ROW FORMAT DELIMITED FIELDS TERMINATED BY '\8'
 stored as textfile
 location  '/data/hive2/input/MB_TRANFLOW/';
 ```
 
 这样的格式进行存储。（每行到空格前的代码只有`create`, `stored`, `location`关键字和字段名，表名以`tmp2.`开头以`(`结尾
-
-尽量不要出现空行。
