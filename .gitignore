@@ -1,11 +1,13 @@
 kettle_config/
 *.xlsx
 *.sql
-*.zip
+*.csv
+*.xls
+error_log.txt
+output*
+AFS*
 
 __pycache__
-AFS*
-CIM_EXCH_TRADEBIZ_TYPE_C_template/
-*.csv
+.vscode
 .DS_Store
 venv

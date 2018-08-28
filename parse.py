@@ -7,11 +7,18 @@ import copy
 import bs4
 from temp import templateFields, t6_last
 
+# ================== OPTIONS ========================
+
+showProgress = True
 template_name = "AFS_FUND_PRODUCT"
 base_dir = "kettle_config/"
-base_table = "table.csv"
-base_sql = "table.sql"
-template_dir = "templates/"
+base_table = ["table.csv"]
+tables_desc = ["output_cfpt.txt", "output_xzpt.txt"]
+
+# ====================================================
+sql_table = {}
+log_err = open("error_logs.txt", 'w')
+
 
 def toUnicode(ch):
     st = ch.encode('unicode_escape')
@@ -19,92 +26,76 @@ def toUnicode(ch):
     st = st.replace("\\u", ";&#x")
     return st[1:] + ';'
 
-def get_template():
+
+def prepare_work():
+    # read template files
     global template_main, templateA, templateB, templateC, templateD
-    with open(template_name + "/" + template_name + "主作业.kjb") as f:
+    with open(template_name + "/" + template_name + "_0.kjb") as f:
         template_main = f.read()
-    with open(template_name + "/" + template_name + "写入正式表.ktr") as f:
+    with open(template_name + "/" + template_name + "_1.ktr") as f:
         templateA = f.read()
-    with open(template_name + "/" + template_name + "回写入库状态.ktr") as f:
+    with open(template_name + "/" + template_name + "_4.ktr") as f:
         templateB = f.read()
-    # with open(template_name + "/" + template_name + "处理数据文件.ktr") as f:
-    #     templateC = f.read()
-    templateC = bs4.BeautifulSoup(open(template_name + "/" + template_name + "处理数据文件.ktr"), "xml")
-    with open(template_name + '/' + template_name + '获取文件名和job_code做变量.ktr') as f:
+    templateC = bs4.BeautifulSoup(open(template_name + "/" + template_name + "_2.ktr"), "xml")
+    with open(template_name + '/' + template_name + '_3.ktr') as f:
         templateD = f.read()
-    read_sql_table()
+    # read sql descriptions from tables_desc
+    for filename in tables_desc:
+        read_sql_table(filename)
 
-def read_sql_table():
+
+def read_sql_table(filename):
     global sql_table
-    with open(base_sql) as fp:
-        # 取每行行首字段
-        firsts = [line.strip().split(' ')[0] for line in fp.readlines()]
-        t = {}
-        now_key = ''
-        s = ''
-        for f in firsts:
-            # 略过关键字
-            if f == 'create' or f == 'location' or f == 'stored':
-                continue
-            # 取段名
-            if f[:5] == 'tmp2.':
-                print(f[5:-1])
-                t[now_key] = s
-                now_key = f[5:-1]
-                s = ''
-            # 取字段
-            else:
-                s += ', ' + f
-    sql_table = t
+    res = {}
+    now_table = ''
+    res[now_table] = []
+    for line in open(filename).readlines():
+        words = line.strip().split(' ')
+        if len(words) == 2 and words[0][0] == '`' and words[0][-1] == '`':
+            res[now_table].append(words[0][1:-1])
+            continue
+        if len(words) == 3 and words[0].lower() == 'create' and words[1].lower() == 'table':
+            now_table = words[2][1:-2]
+            res[now_table] = []
+    sql_table.update(res)
     del sql_table['']
-            
-        
-
-def get_table_name(filename):
-    with open(filename) as fp:
-        return [row for row in csv.reader(fp)]
 
 
 def mk_row_struct(row):
-    job_code = row[0]
+    job_code, tablename, ptname = row
     # copy file from template
     if not os.path.exists(job_code):
         os.mkdir(job_code)
+    try:
+        structs = sql_table[ptname.lower() + "." + tablename.lower()]
+    except KeyError as e:
+        log_err.write(str(e) + '\n')
+        return False
     toMain(job_code)
     toA(job_code)
     toB(job_code)
-    toC(job_code)
+    toC(job_code, structs)
     toD(job_code)
+    return True
 
 
 def toMain(code):
-    # template_main
-    with open(code + "/" + code + "主作业.kjb", 'w') as fw:
+    # 主作业
+    with open(code + "/" + code + "_0.kjb", 'w') as fw:
         fw.write(template_main.replace(template_name, code))
 
+
 def toA(code):
-    with open(code + "/" + code + "写入正式表.ktr", 'w') as fw:
+    with open(code + "/" + code + "_1.ktr", 'w') as fw:
         fw.write(templateA.replace(template_name, code))
 
+
 def toB(code):
-    with open(code + "/" + code + "回写入库状态.ktr", 'w') as fw:
+    with open(code + "/" + code + "_4.ktr", 'w') as fw:
         fw.write(templateB.replace(template_name, code))
 
-def toC(code):
-    # 生成新的 “处理数据文件”
-    structs = find_struct(code)
-    # structs = ["EXCH_TRADEBIZ_TYPE_CD", "EXCH_TRADEBIZ_TYPE_DESC"]
-    print(structs)
-    add_fields(code, structs)
 
-def toD(code):
-    with open(code + "/" + code + "获取文件名和job_code做变量.ktr", 'w') as fw:
-        fw.write(templateD.replace(template_name, code))
-
-def find_struct(query):
-    return sql_table[query].split(", ")[1:]
-
-def add_fields(code, structs):
+def toC(code, structs):
     fields = templateC.find_all("fields")
     for i in range(6):
         if i != 5: 
@@ -119,26 +110,47 @@ def add_fields(code, structs):
                 fields[i].append(bs4.BeautifulSoup(c, "xml").field)
             fields[i].append(bs4.BeautifulSoup(t6_last.format(name=structs[-1]), "xml").field)
     # print(code + "/" + code + "处理数据文件.ktr")
-    with open(code + "/" + code + "处理数据文件.ktr", 'wb') as fw:
+    with open(code + "/" + code + "_2.ktr", 'wb') as fw:
         temp = str(templateC).replace(template_name, code)
         fw.write(temp.encode('utf-8'))
 
+
+def toD(code):
+    with open(code + "/" + code + "_3.ktr", 'w') as fw:
+        fw.write(templateD.replace(template_name, code))
+
+
 def main():
-    get_template()
-    # get name
-    rows = get_table_name(base_table)
-    # ch
+    prepare_work()
+    ## get all objectives
+    rows = []
+    for filename in base_table:
+        rows.extend([row for row in csv.reader(open(filename))])
+    ## into base directory
+    if not os.path.exists(base_dir):
+        os.mkdir(base_dir)
     os.chdir(base_dir)
+    ## main procedure
+    print("generate: " + str(len(rows)) + " tables' kettle configurations.")
+    if showProgress:
+        from progress.bar import Bar
+        bar = Bar(' Processing', max=len(rows))
     with open("tablenames.txt", 'w') as fw:
         for r in rows:
-            mk_row_struct(r)
-            print(r[0])
-            fw.write(r[0] + '\n')
+            if not mk_row_struct(r):
+                # print(r[0])
+                fw.write(r[0] + '\n')
+            if showProgress:
+                bar.next()
+    ## end of procedure
+    if showProgress:
+        bar.finish()
+    log_err.close()
 
 if __name__ == '__main__':
     main()
-    # read_sql_table()
+    # prepare_work()
     with open("sql_tables.csv", 'w') as fw:
         for k in sql_table:
-            fw.write(k +  "," + sql_table[k].replace(", ", "|").strip().strip("|") +"\n")
+            fw.write(k +  "," + str(sql_table[k]).replace(", ", "|") +"\n")
     

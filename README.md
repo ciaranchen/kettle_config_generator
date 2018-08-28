@@ -2,6 +2,12 @@
 
 本项目用于批量生成针对不同数据表进行ETL的kettle项目。
 
+## 安装依赖
+
+```shell
+pip install -r requirements.txt
+```
+
 ## 文件说明
 
 - parse.py
@@ -40,20 +46,23 @@ node encode.js tablenames.txt
 
 > 会在原文件夹下生成`下划线+原文件名`的新文件。
 
+## 选项说明
+
+- showProgress。 显示进度条
+- template_name。 作为模板的文件夹
+- base_dir。 生成结果存放地
+- base_table。 可以为按列表格式写出的一个或多个文件。列出文件为需要生成的表名组成的csv文件。必须有三列：`job_code, 表名, 平台名称`。文件中不需出现列标题。
+- tables_desc。 可以为按列表格式写出的一个或多个文件。按照特殊格式生成的建表语句，详细要求见下文。
+
 ## 使用须知
 
 ### 对SQL文件的要求
 
 文件中的代码必须以
 
-```sql
-create EXTERNAL table IF NOT EXISTS
-tmp2.TABLENAME(
-TRF_FLOWNO        String,
-...
-TEST              String)ROW FORMAT DELIMITED FIELDS TERMINATED BY '\8'
-stored as textfile
-location  '/data/hive2/input/MB_TRANFLOW/';
+```shell
+hive -e "use xxx; show tables;" | awk '{printf"show create table %s", $1}' > show_tables.sql
+hive -f show_tables.sql >> output_cfpt.txt
 ```
 
-这样的格式进行存储。（每行到空格前的代码只有`create`, `stored`, `location`关键字和字段名，表名以`tmp2.`开头以`(`结尾
+生成的代码格式进行存储。
