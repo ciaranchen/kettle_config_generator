@@ -51,7 +51,7 @@ node encode.js tablenames.txt
 - showProgress。 显示进度条
 - template_name。 作为模板的文件夹
 - base_dir。 生成结果存放地
-- base_table。 可以为按列表格式写出的一个或多个文件。列出文件为需要生成的表名组成的csv文件。必须有三列：`job_code, 表名, 平台名称`。文件中不需出现列标题。
+- base_table。 可以为按列表格式写出的一个或多个文件。列出文件为需要生成的表名组成的csv文件。必须有三列：`job_code, 表名, NAMESPACE名称`。文件中不需出现列标题。
 - tables_desc。 可以为按列表格式写出的一个或多个文件。按照特殊格式生成的建表语句，详细要求见下文。
 
 ## 使用须知
@@ -61,8 +61,8 @@ node encode.js tablenames.txt
 文件中的代码必须以
 
 ```shell
-hive -e "use xxx; show tables;" | awk '{printf"show create table %s", $1}' > show_tables.sql
-hive -f show_tables.sql >> output_cfpt.txt
+hive -e "use xxx; show tables;" | awk '{printf"show create table xxx.%s", $1}' > show_tables.sql
+hive -f show_tables.sql > output_cfpt.txt
 ```
 
 生成的代码格式进行存储。
