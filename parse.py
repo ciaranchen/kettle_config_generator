@@ -5,30 +5,25 @@ import os
 import copy
 
 import bs4
-from temp import templateFields, t6_last
+from temp import templateFields, special_field
 
 # ================== OPTIONS ========================
 
 showProgress = True
-template_name = "AFS_FUND_PRODUCT"
+template_name = "AFS_FIN_PROD_NETVALUE_H"
 base_dir = "kettle_config/"
 base_table = ["table.csv"]
 tables_desc = ["output_cfpt.txt", "output_xzpt.txt"]
 
 # ====================================================
+
 sql_table = {}
-log_err = open("error_logs.txt", 'w')
-
-
-def toUnicode(ch):
-    st = ch.encode('unicode_escape')
-    st = st.decode("utf-8")
-    st = st.replace("\\u", ";&#x")
-    return st[1:] + ';'
+log_err = open("error.log", 'w')
+step_names = [k[1] for k in templateFields]
 
 
 def prepare_work():
-    # read template files
+    ## read template files
     global template_main, templateA, templateB, templateC, templateD
     with open(template_name + "/" + template_name + "_0.kjb") as f:
         template_main = f.read()
@@ -39,7 +34,7 @@ def prepare_work():
     templateC = bs4.BeautifulSoup(open(template_name + "/" + template_name + "_2.ktr"), "xml")
     with open(template_name + '/' + template_name + '_3.ktr') as f:
         templateD = f.read()
-    # read sql descriptions from tables_desc
+    ## read sql descriptions from tables_desc
     for filename in tables_desc:
         read_sql_table(filename)
 
@@ -48,7 +43,6 @@ def read_sql_table(filename):
     global sql_table
     res = {}
     now_table = ''
-    res[now_table] = []
     for line in open(filename).readlines():
         words = line.strip().split(' ')
         if len(words) == 2 and words[0][0] == '`' and words[0][-1] == '`':
@@ -58,12 +52,13 @@ def read_sql_table(filename):
             now_table = words[2][1:-2]
             res[now_table] = []
     sql_table.update(res)
-    del sql_table['']
+    if '' in sql_table:
+        del sql_table['']
 
 
 def mk_row_struct(row):
     job_code, tablename, ptname = row
-    # copy file from template
+    ## copy file from template
     if not os.path.exists(job_code):
         os.mkdir(job_code)
     try:
@@ -80,7 +75,7 @@ def mk_row_struct(row):
 
 
 def toMain(code):
-    # 主作业
+    ## 主作业
     with open(code + "/" + code + "_0.kjb", 'w') as fw:
         fw.write(template_main.replace(template_name, code))
 
@@ -96,23 +91,29 @@ def toB(code):
 
 
 def toC(code, structs):
-    fields = templateC.find_all("fields")
-    for i in range(6):
-        if i != 5: 
-            content = [templateFields[i].format(name=c) for c in structs]
-            fields[i].clear()
+    steps = templateC.find_all("step")
+    for step in steps:
+        name = step.find("name").text
+        fields = step.find("fields")
+        ## clear fields
+        fields.clear()
+
+        ## append with basic stituations
+        if name in step_names:
+            template_field, _ = [e for e in filter(lambda x: x[1] == name, templateFields)][0]
+            content = [template_field.format(name=c) for c in structs]
             for c in content:
-                fields[i].append(bs4.BeautifulSoup(c, "xml").field)
-        else:
-            content = [templateFields[i].format(name=c) for c in structs[:-1]]
-            fields[i].clear()
-            for c in content:
-                fields[i].append(bs4.BeautifulSoup(c, "xml").field)
-            fields[i].append(bs4.BeautifulSoup(t6_last.format(name=structs[-1]), "xml").field)
-    # print(code + "/" + code + "处理数据文件.ktr")
+                fields.append(bs4.BeautifulSoup(c, "xml").field)
+
+        ## deal with special stituation
+        if name == special_field[0]:
+            _, template1, template2 = special_field
+            contents = [template1.format(name=c) for c in structs[:-1]]
+            for c in contents:
+                fields.append(bs4.BeautifulSoup(c, "xml").field)
+            fields.append(bs4.BeautifulSoup(template2.format(name=structs[-1]), "xml"))
     with open(code + "/" + code + "_2.ktr", 'wb') as fw:
-        temp = str(templateC).replace(template_name, code)
-        fw.write(temp.encode('utf-8'))
+        fw.write(str(templateC).replace(template_name, code).encode('utf-8'))
 
 
 def toD(code):
@@ -138,10 +139,11 @@ def main():
     with open("tablenames.txt", 'w') as fw:
         for r in rows:
             if not mk_row_struct(r):
-                # print(r[0])
+                print(r[0])
                 fw.write(r[0] + '\n')
             if showProgress:
                 bar.next()
+            # break
     ## end of procedure
     if showProgress:
         bar.finish()

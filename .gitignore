@@ -4,6 +4,7 @@ kettle_config/
 *.csv
 *.xls
 error_log.txt
+error.log
 output*
 AFS*
 

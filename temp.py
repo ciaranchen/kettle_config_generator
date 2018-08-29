@@ -76,9 +76,17 @@ t5 = r"""
 </field>
 """
 
+templateFields = [
+  (t1, "get_datafile_input"), 
+  (t2, "out_put_end_file"),
+  (t3, "out_put_file_bf"),
+  (t4, "fields_change_first"),
+  (t5, "fields_split")]
+
+
 t6 = r"""
 <field>
-<in_stream_name> {name} </in_stream_name>
+<in_stream_name>{name}</in_stream_name>
 <out_stream_name/>
 <use_regex>no</use_regex>
 <replace_string/>
@@ -89,8 +97,6 @@ t6 = r"""
 <case_sensitive>no</case_sensitive>
 </field>
 """
-
-templateFields = [t1, t2, t3, t4, t5, t6]
 
 t6_last = r"""
 <field>
@@ -105,3 +111,7 @@ t6_last = r"""
 <case_sensitive>no</case_sensitive>
 </field>
 """
+
+special_field = (
+  "fields_split_second",
+  t6, t6_last)
