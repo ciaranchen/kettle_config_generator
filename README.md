@@ -48,11 +48,13 @@ node encode.js tablenames.txt
 
 ## 选项说明
 
-- showProgress。 显示进度条
+- showProgress。 是否显示进度条
+- ignoreCheck。 是否忽略检查（注，请保持为False，且有报错时应询问管理员）
 - template_name。 作为模板的文件夹
 - base_dir。 生成结果存放地
 - base_table。 可以为按列表格式写出的一个或多个文件。列出文件为需要生成的表名组成的csv文件。必须有三列：`job_code, 表名, NAMESPACE名称`。文件中不需出现列标题。
 - tables_desc。 可以为按列表格式写出的一个或多个文件。按照特殊格式生成的建表语句，详细要求见下文。
+- errorlog。 错误日志存放地，默认为"error.log"。
 
 ## 使用须知
 
@@ -66,3 +68,20 @@ hive -f show_tables.sql > output_cfpt.txt
 ```
 
 生成的代码格式进行存储。
+
+### 对Kettle配置模板的需求
+
+对于：
+
+- <job_code>_0.kjb
+- <job_code>_1.ktr
+- <job_code>_3.ktr
+- <job_code>_4.ktr
+
+基本无要求，仅替换了jobcode字段。
+
+对于：
+
+- <job_code>_2.ktr
+
+则要求表中的步骤都按特定的方式命名，如此方能确保特定的解决方案被使用。
