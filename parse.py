@@ -22,7 +22,6 @@ errorlog = "error.log"
 sql_table = {}
 
 step_names = [k[1] for k in templateFields]
-temporary_filename = "__parse__"
 
 def check_config():
     print("checking...")
@@ -40,11 +39,6 @@ def check_config():
         ## check all step name exists
         no_names = [sn for sn in step_names if sn not in names]
         errs.extend(["step not found: " + name for name in no_names])
-        ## clear all fields and write in new files
-        for step in steps:
-            step.find("fields").clear()
-        with open(temporary_filename, 'wb') as fw:
-            fw.write(str(basicC).encode('utf-8'))
     return errs
 
 
@@ -55,7 +49,8 @@ def prepare_work():
         template_main = f.read()
     with open(template_name + "/" + template_name + "_1.ktr") as f:
         templateA = f.read()
-    templateB = bs4.BeautifulSoup(open(temporary_filename), "xml")
+    with open(template_name + "/" + template_name + "_2.ktr") as f:
+        templateB = bs4.BeautifulSoup(f, "xml")
     with open(template_name + "/" + template_name + "_3.ktr") as f:
         templateC = f.read()
     with open(template_name + '/' + template_name + '_4.ktr') as f:
@@ -71,11 +66,10 @@ def read_sql_table(filename):
     now_table = ''
     for line in open(filename).readlines():
         words = line.strip().split(' ')
-        if len(words) == 2 and words[0][0] == '`' and words[0][-1] == '`':
-            res[now_table].append(words[0][1:-1])
-            continue
-        if len(words) == 3 and words[0].lower() == 'create' and words[1].lower() == 'table':
-            now_table = words[2][1:-2]
+        if len(words) == 2 and words[0] != "TBLPROPERTIES":
+            res[now_table].append(words[0].strip('`\'\"'))
+        elif len(words) == 3 and words[0].lower() == 'create' and words[1].lower() == 'table':
+            now_table = words[2][:-1].strip('`\'\"')
             res[now_table] = []
     sql_table.update(res)
     if '' in sql_table:
@@ -116,6 +110,7 @@ def toB(code, structs):
     for step in steps:
         name = step.find("name").text
         fields = step.find("fields")
+        fields.clear()
 
         ## append with basic stituations
         if name in step_names:
