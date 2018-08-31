@@ -3,7 +3,7 @@ kettle_config/
 *.sql
 *.csv
 *.xls
-error_log.txt
+*.txt
 error.log
 output*
 AFS*

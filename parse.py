@@ -14,7 +14,7 @@ ignoreCheck = False
 template_name = "AFS_FIN_PROD_NETVALUE_H"
 base_dir = "kettle_config/"
 base_table = ["table.csv"]
-tables_desc = ["output_cfpt.txt", "output_xzpt.txt"]
+tables_desc = ["tables_1.txt"]
 errorlog = "error.log"
 
 # ====================================================
@@ -65,11 +65,12 @@ def read_sql_table(filename):
     res = {}
     now_table = ''
     for line in open(filename).readlines():
-        words = line.strip().split(' ')
+        words = [e for e in line.strip().split(' ') if e != '']
         if len(words) == 2 and words[0] != "TBLPROPERTIES":
-            res[now_table].append(words[0].strip('`\'\"'))
+            res[now_table].append(words[0].strip('`\'\"').lower())
         elif len(words) == 3 and words[0].lower() == 'create' and words[1].lower() == 'table':
-            now_table = words[2][:-1].strip('`\'\"')
+            pt_tab = words[2][:-1].strip('`\'\"')
+            now_table = pt_tab.split('.')[-1].lower()
             res[now_table] = []
     sql_table.update(res)
     if '' in sql_table:
@@ -77,12 +78,12 @@ def read_sql_table(filename):
 
 
 def mk_row_struct(row):
-    job_code, tablename, ptname = row
+    job_code, tablename, _ = row
     ## copy file from template
     if not os.path.exists(job_code):
         os.mkdir(job_code)
     try:
-        structs = sql_table[ptname.lower() + "." + tablename.lower()]
+        structs = sql_table[tablename.lower()]
     except KeyError as e:
         log_err.write(str(e) + '\n')
         return False
@@ -180,32 +181,7 @@ def main():
     with open("sql_tables.csv", 'w') as fw:
         for k in sql_table:
             fw.write(k +  "," + str(sql_table[k]).replace(", ", "|") +"\n")
-        rows.extend([row for row in csv.reader(open(filename))])
-    ## into base directory
-    if not os.path.exists(base_dir):
-        os.mkdir(base_dir)
-    os.chdir(base_dir)
-    ## main procedure
-    print("generate: " + str(len(rows)) + " tables' kettle configurations.")
-    if showProgress:
-        from progress.bar import Bar
-        bar = Bar(' Processing', max=len(rows))
-    with open("tablenames.txt", 'w') as fw:
-        for r in rows:
-            if mk_row_struct(r):
-                # print(r[0])
-                fw.write(r[0] + '\n')
-            if showProgress:
-                bar.next()
-            # break
-    ## end of procedure
-    if showProgress:
-        bar.finish()
-    os.remove(temporary_filename)
-    log_err.close()
-    with open("sql_tables.csv", 'w') as fw:
-        for k in sql_table:
-            fw.write(k +  "," + str(sql_table[k]).replace(", ", "|") +"\n")
+
 
 if __name__ == '__main__':
     global log_err

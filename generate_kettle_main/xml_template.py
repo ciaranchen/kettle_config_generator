@@ -5,7 +5,7 @@ entry_template = """<entry>
       <type>JOB</type>
       <specification_method>filename</specification_method>
       <job_object_id/>
-      <filename>D&#x3a;&#x5c;ljy&#x5c;kettles&#x5c;{name}&#x5c;{name}.kjb</filename>
+      <filename>{path}{split}{name}{split}{name}_0.kjb</filename>
       <jobname/>
       <arg_from_previous>N</arg_from_previous>
       <params_from_previous>N</params_from_previous>
